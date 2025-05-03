@@ -4,206 +4,107 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-# Set judul dashboard
-st.title('Analisis Data Penyewaan Sepeda')
-st.markdown("""
-**Nama:** Putri Indah Sari  
-**Email:** putri04213@gmail.com  
-**ID Dicoding:** MC813D5X1836
-""")
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Load data
-@st.cache_data
-def load_data():
-    hour_df = pd.read_csv('hour.csv')
-    day_df = pd.read_csv('day.csv')
-    return hour_df, day_df
+day_df = pd.read_csv('day.csv')
+hour_df = pd.read_csv('hour.csv')
 
-hour_df, day_df = load_data()
+# Set style
+sns.set(style="whitegrid")
 
-# Konversi kolom dteday ke datetime
-hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
-day_df['dteday'] = pd.to_datetime(day_df['dteday'])
+# Judul utama
+st.title("Dashboard Analisis Penyewaan Sepeda (2011–2012)")
 
-# Sidebar untuk navigasi
-st.sidebar.title('Navigasi')
-page = st.sidebar.radio("Pilih Halaman:", 
-                        ["Pertanyaan Bisnis", 
-                         "Eksplorasi Data", 
-                         "Analisis Musiman", 
-                         "Analisis Hari Libur"])
+# ===============================
+# PERTANYAAN BISNIS 1
+# ===============================
+st.header("Pertanyaan 1: Bagaimana perbedaan jumlah penyewaan sepeda antara musim panas dan musim dingin pada tahun 2011–2012?")
 
-if page == "Pertanyaan Bisnis":
-    st.header("Pertanyaan Bisnis")
-    st.markdown("""
-    1. Bagaimana perbedaan jumlah penyewaan sepeda antara musim panas dan musim dingin dalam tahun 2011-2012, dan faktor apa saja yang berkontribusi terhadap perbedaan tersebut?
-    2. Bagaimana pengaruh hari libur terhadap jumlah penyewaan sepeda pada tahun 2011-2012, dan apakah ada pola tertentu yang dapat diidentifikasi?
-    """)
+# Pra-pemrosesan
+day_df['season_name'] = day_df['season'].map({1: 'Winter', 2: 'Spring', 3: 'Summer', 4: 'Fall'})
+day_df['year'] = day_df['yr'].map({0: '2011', 1: '2012'})
+day_df['workingday_label'] = day_df['workingday'].map({0: 'Libur', 1: 'Hari Kerja'})
+filtered = day_df[day_df['season'].isin([1, 3])]  # Hanya summer dan winter
 
-elif page == "Eksplorasi Data":
-    st.header("Eksplorasi Data")
-    
-    st.subheader("Data Hour")
-    st.write(hour_df.head())
-    st.write(f"Jumlah baris: {hour_df.shape[0]}, Jumlah kolom: {hour_df.shape[1]}")
-    
-    st.subheader("Data Day")
-    st.write(day_df.head())
-    st.write(f"Jumlah baris: {day_df.shape[0]}, Jumlah kolom: {day_df.shape[1]}")
-    
-    st.subheader("Statistik Deskriptif")
-    st.write(day_df.describe())
-    
-    st.subheader("Distribusi Variabel Numerik")
-    num_cols = ['temp', 'atemp', 'hum', 'windspeed', 'casual', 'registered', 'cnt']
-    
-    fig, axes = plt.subplots(3, 3, figsize=(15, 12))
-    for i, col in enumerate(num_cols):
-        sns.boxplot(y=day_df[col], ax=axes[i//3, i%3])
-        axes[i//3, i%3].set_title(f"Boxplot {col}")
-    plt.tight_layout()
-    st.pyplot(fig)
+# Visualisasi rata-rata penyewaan
+st.subheader("Rata-rata Penyewaan Sepeda: Musim Panas vs Musim Dingin")
+seasonal_avg = filtered.groupby(['year', 'season_name'])['cnt'].mean().reset_index()
+fig, ax = plt.subplots()
+sns.barplot(data=seasonal_avg, x='year', y='cnt', hue='season_name', palette='coolwarm', ax=ax)
+st.pyplot(fig)
 
-elif page == "Analisis Musiman":
-    st.header("Analisis Musiman")
-    
-    # Mapping season
-    season_map = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
-    day_df['season_name'] = day_df['season'].map(season_map)
-    
-    # Perbedaan penyewaan antar musim
-    st.subheader("Perbandingan Penyewaan Sepeda per Musim")
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='season_name', y='cnt', data=day_df, ax=ax, order=['Spring', 'Summer', 'Fall', 'Winter'])
-    ax.set_title('Rata-rata Penyewaan Sepeda per Musim')
-    ax.set_xlabel('Musim')
-    ax.set_ylabel('Jumlah Penyewaan')
-    st.pyplot(fig)
-    
-    # Faktor yang mempengaruhi (suhu, kelembaban, kecepatan angin)
-    st.subheader("Faktor yang Mempengaruhi Penyewaan Sepeda per Musim")
-    
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    
-    # Suhu
-    sns.boxplot(x='season_name', y='temp', data=day_df, ax=axes[0], order=['Spring', 'Summer', 'Fall', 'Winter'])
-    axes[0].set_title('Distribusi Suhu per Musim')
-    axes[0].set_xlabel('Musim')
-    axes[0].set_ylabel('Suhu (normalized)')
-    
-    # Kelembaban
-    sns.boxplot(x='season_name', y='hum', data=day_df, ax=axes[1], order=['Spring', 'Summer', 'Fall', 'Winter'])
-    axes[1].set_title('Distribusi Kelembaban per Musim')
-    axes[1].set_xlabel('Musim')
-    axes[1].set_ylabel('Kelembaban')
-    
-    # Kecepatan Angin
-    sns.boxplot(x='season_name', y='windspeed', data=day_df, ax=axes[2], order=['Spring', 'Summer', 'Fall', 'Winter'])
-    axes[2].set_title('Distribusi Kecepatan Angin per Musim')
-    axes[2].set_xlabel('Musim')
-    axes[2].set_ylabel('Kecepatan Angin')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
-    
-    # Korelasi faktor dengan jumlah penyewaan
-    st.subheader("Korelasi Faktor Cuaca dengan Jumlah Penyewaan")
-    
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    
-    # Suhu vs Penyewaan
-    sns.scatterplot(x='temp', y='cnt', data=day_df, ax=axes[0])
-    axes[0].set_title('Suhu vs Jumlah Penyewaan')
-    axes[0].set_xlabel('Suhu (normalized)')
-    axes[0].set_ylabel('Jumlah Penyewaan')
-    
-    # Kelembaban vs Penyewaan
-    sns.scatterplot(x='hum', y='cnt', data=day_df, ax=axes[1])
-    axes[1].set_title('Kelembaban vs Jumlah Penyewaan')
-    axes[1].set_xlabel('Kelembaban')
-    axes[1].set_ylabel('Jumlah Penyewaan')
-    
-    # Kecepatan Angin vs Penyewaan
-    sns.scatterplot(x='windspeed', y='cnt', data=day_df, ax=axes[2])
-    axes[2].set_title('Kecepatan Angin vs Jumlah Penyewaan')
-    axes[2].set_xlabel('Kecepatan Angin')
-    axes[2].set_ylabel('Jumlah Penyewaan')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+# Visualisasi suhu
+st.subheader("Rata-rata Suhu Udara")
+fig, ax = plt.subplots()
+sns.barplot(data=filtered, x='season_name', y='temp', palette='coolwarm', ax=ax)
+st.pyplot(fig)
 
-elif page == "Analisis Hari Libur":
-    st.header("Analisis Pengaruh Hari Libur")
-    
-    # Mapping holiday
-    holiday_map = {0: 'Bukan Hari Libur', 1: 'Hari Libur'}
-    day_df['holiday_name'] = day_df['holiday'].map(holiday_map)
-    
-    # Perbandingan penyewaan hari libur vs bukan libur
-    st.subheader("Perbandingan Penyewaan Sepeda: Hari Libur vs Bukan Libur")
-    
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sns.barplot(x='holiday_name', y='cnt', data=day_df, ax=ax)
-    ax.set_title('Rata-rata Penyewaan Sepeda: Hari Libur vs Bukan Libur')
-    ax.set_xlabel('Status Hari')
-    ax.set_ylabel('Jumlah Penyewaan')
-    st.pyplot(fig)
-    
-    # Penyewaan per hari dalam minggu
-    st.subheader("Pola Penyewaan Sepeda per Hari dalam Minggu")
-    
-    # Mapping weekday
-    weekday_map = {0: 'Minggu', 1: 'Senin', 2: 'Selasa', 3: 'Rabu', 
-                  4: 'Kamis', 5: 'Jumat', 6: 'Sabtu'}
-    day_df['weekday_name'] = day_df['weekday'].map(weekday_map)
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='weekday_name', y='cnt', data=day_df, 
-                order=['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'], ax=ax)
-    ax.set_title('Rata-rata Penyewaan Sepeda per Hari dalam Minggu')
-    ax.set_xlabel('Hari dalam Minggu')
-    ax.set_ylabel('Jumlah Penyewaan')
-    st.pyplot(fig)
-    
-    # Perbandingan pengguna casual vs registered di hari libur
-    st.subheader("Perbandingan Pengguna Casual vs Registered di Hari Libur")
-    
-    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-    
-    # Hari Libur
-    libur_data = day_df[day_df['holiday'] == 1]
-    sns.barplot(x='holiday_name', y='casual', data=libur_data, ax=axes[0])
-    axes[0].set_title('Pengguna Casual di Hari Libur')
-    axes[0].set_xlabel('Status Hari')
-    axes[0].set_ylabel('Jumlah Pengguna Casual')
-    
-    sns.barplot(x='holiday_name', y='registered', data=libur_data, ax=axes[1])
-    axes[1].set_title('Pengguna Registered di Hari Libur')
-    axes[1].set_xlabel('Status Hari')
-    axes[1].set_ylabel('Jumlah Pengguna Registered')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
-    
-    # Perbandingan pengguna casual vs registered di hari kerja
-    st.subheader("Perbandingan Pengguna Casual vs Registered di Hari Kerja")
-    
-    kerja_data = day_df[day_df['workingday'] == 1]
-    
-    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-    
-    sns.barplot(x='weekday_name', y='casual', data=kerja_data, 
-                order=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], ax=axes[0])
-    axes[0].set_title('Pengguna Casual di Hari Kerja')
-    axes[0].set_xlabel('Hari dalam Minggu')
-    axes[0].set_ylabel('Jumlah Pengguna Casual')
-    
-    sns.barplot(x='weekday_name', y='registered', data=kerja_data, 
-                order=['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], ax=axes[1])
-    axes[1].set_title('Pengguna Registered di Hari Kerja')
-    axes[1].set_xlabel('Hari dalam Minggu')
-    axes[1].set_ylabel('Jumlah Pengguna Registered')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
+# Visualisasi kelembapan
+st.subheader("Rata-rata Kelembapan Udara")
+fig, ax = plt.subplots()
+sns.barplot(data=filtered, x='season_name', y='hum', palette='coolwarm', ax=ax)
+st.pyplot(fig)
+
+# Visualisasi kondisi cuaca
+filtered['weather_label'] = filtered['weathersit'].map({
+    1: 'Cerah / Sebagian Berawan',
+    2: 'Berkabut + Berawan',
+    3: 'Hujan Ringan / Salju',
+    4: 'Hujan Lebat / Badai'
+})
+st.subheader("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda")
+fig, ax = plt.subplots(figsize=(10, 5))
+sns.barplot(data=filtered, x='weather_label', y='cnt', hue='season_name', ax=ax)
+plt.xticks(rotation=15)
+st.pyplot(fig)
+
+# Hari kerja vs libur
+st.subheader("Hari Kerja vs Libur: Summer vs Winter")
+fig, ax = plt.subplots()
+sns.barplot(data=filtered, x='workingday_label', y='cnt', hue='season_name', ax=ax)
+st.pyplot(fig)
+
+# ===============================
+# PERTANYAAN BISNIS 2
+# ===============================
+st.header("Pertanyaan 2: Bagaimana pengaruh hari libur terhadap jumlah penyewaan sepeda pada tahun 2011–2012?")
+
+hour_df['year'] = hour_df['yr'].map({0: 2011, 1: 2012})
+
+# Hari libur per jam
+st.subheader("Pola Penyewaan Sepeda per Jam di Hari Libur")
+holiday_hourly = hour_df[hour_df['holiday'] == 1]
+hourly_avg = holiday_hourly.groupby(['hr', 'year'])['cnt'].mean().reset_index()
+fig, ax = plt.subplots()
+sns.lineplot(data=hourly_avg, x='hr', y='cnt', hue='year', palette={2011: 'skyblue', 2012: 'coral'}, ax=ax)
+st.pyplot(fig)
+
+# Hari libur per bulan
+st.subheader("Pola Penyewaan Sepeda per Bulan di Hari Libur")
+day_df['month'] = day_df['mnth']
+holiday_monthly = day_df[day_df['holiday'] == 1]
+monthly_avg = holiday_monthly.groupby(['month', 'year'])['cnt'].mean().reset_index()
+fig, ax = plt.subplots()
+sns.lineplot(data=monthly_avg, x='month', y='cnt', hue='year', marker='o', ax=ax)
+ax.set_xticks(range(1, 13))
+ax.set_xticklabels(['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'])
+st.pyplot(fig)
+
+# Rata-rata penyewaan: libur vs kerja
+st.subheader("Rata-Rata Penyewaan: Hari Libur vs Hari Kerja")
+hour_df['holiday_type'] = hour_df['holiday'].map({0: 'Hari Kerja', 1: 'Hari Libur'})
+holiday_avg = hour_df.groupby(['year', 'holiday_type'])['cnt'].mean().reset_index()
+fig, ax = plt.subplots()
+sns.barplot(data=holiday_avg, x='year', y='cnt', hue='holiday_type', palette={'Hari Libur': 'red', 'Hari Kerja': 'blue'}, ax=ax)
+st.pyplot(fig)
+
+# Per jam: libur vs kerja
+st.subheader("Pola Penyewaan per Jam: Hari Libur vs Hari Kerja")
+hourly_avg = hour_df.groupby(['hr', 'holiday_type'])['cnt'].mean().reset_index()
+fig, ax = plt.subplots()
+sns.lineplot(data=hourly_avg, x='hr', y='cnt', hue='holiday_type', palette={'Hari Kerja': 'blue', 'Hari Libur': 'red'}, ax=ax)
+st.pyplot(fig)
