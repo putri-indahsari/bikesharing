@@ -41,10 +41,11 @@ plt.legend(title='Tahun')
 st.pyplot(fig)
 
 # Visualisasi rata-rata penyewaan
-st.subheader("Rata-rata Penyewaan Sepeda: Musim Panas vs Musim Dingin")
-seasonal_avg = filtered.groupby(['year', 'season_name'])['cnt'].mean().reset_index()
-fig, ax = plt.subplots()
-sns.barplot(data=seasonal_avg, x='year', y='cnt', hue='season_name', palette='coolwarm', ax=ax)
+ax.set_title('Perbandingan Rata-Rata Penyewaan Sepeda: 2011 vs 2012 (Musim Panas dan Dingin)', fontsize=14)
+ax.set_xlabel('Tahun', fontsize=12)
+ax.set_ylabel('Rata-Rata Penyewaan Sepeda', fontsize=12)
+ax.legend(title='Musim', bbox_to_anchor=(1, 1))
+ax.grid(axis='y', linestyle='--', alpha=0.7)
 st.pyplot(fig)
 
 # Visualisasi suhu
