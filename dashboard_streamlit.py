@@ -40,13 +40,46 @@ plt.ylabel('Rata-Rata Penyewaan')
 plt.legend(title='Tahun')
 st.pyplot(fig)
 
-# Visualisasi rata-rata penyewaan
+# Tambahkan bagian ini di dashboard Streamlit Anda, bisa di bagian Pertanyaan Bisnis 1
+
+st.subheader("Perbandingan Penyewaan Sepeda: Musim Panas vs Dingin (2011-2012)")
+
+# 1. Filter data untuk musim panas (2) dan dingin (4) serta tahun 2011-2012
+summer_winter_df = day_df[day_df['season'].isin([2, 4]) & day_df['yr'].isin([0, 1])].copy()
+
+# 2. Mapping nilai musim dan tahun
+summer_winter_df['season_name'] = summer_winter_df['season'].map({2: 'Summer', 4: 'Winter'})
+summer_winter_df['year'] = summer_winter_df['yr'].map({0: '2011', 1: '2012'})
+
+# 3. Hitung rata-rata penyewaan per musim dan tahun
+seasonal_avg = summer_winter_df.groupby(['year', 'season_name'])['cnt'].mean().reset_index()
+
+# 4. Visualisasi dengan Streamlit
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.barplot(
+    x='year',
+    y='cnt',
+    hue='season_name',
+    data=seasonal_avg,
+    palette={'Summer': 'salmon', 'Winter': 'lightblue'},
+    ax=ax
+)
+
 ax.set_title('Perbandingan Rata-Rata Penyewaan Sepeda: 2011 vs 2012 (Musim Panas dan Dingin)', fontsize=14)
 ax.set_xlabel('Tahun', fontsize=12)
 ax.set_ylabel('Rata-Rata Penyewaan Sepeda', fontsize=12)
 ax.legend(title='Musim', bbox_to_anchor=(1, 1))
 ax.grid(axis='y', linestyle='--', alpha=0.7)
+
 st.pyplot(fig)
+
+# Tambahkan insight/penjelasan
+st.markdown("""
+**Insight:**
+- Terlihat perbedaan yang signifikan antara penyewaan di musim panas dan dingin
+- Penyewaan di musim panas lebih tinggi dibanding musim dingin di kedua tahun
+- Terjadi peningkatan jumlah penyewaan dari 2011 ke 2012 untuk kedua musim
+""")
 
 # Visualisasi suhu
 st.subheader("Rata-rata Suhu Udara")
