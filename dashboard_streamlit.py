@@ -103,7 +103,7 @@ weather_map = {
 filtered_day['weather'] = filtered_day['weathersit'].map(weather_map)
 
 fig, ax = plt.subplots(figsize=(10, 5))
-sns.boxplot(
+sns.barplot(
     data=filtered_day,
     x='weather',
     y='cnt',
